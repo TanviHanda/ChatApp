@@ -1,7 +1,7 @@
 import User from "@/models/user.model.js";
 import { Response, Request } from "express";
 import bcrypt from "bcryptjs";
-import { generateToken } from "@/lib/utils.js";
+import { clearToken, generateToken } from "@/lib/utils.js";
 import cloudinary from "@/lib/cloudinary.js";
 
 // Extend Express Request to include user (if middleware sets it)
@@ -98,8 +98,8 @@ export const login = async (req: Request, res: Response) => {
 
 export const logout = (_req: Request, res: Response) => {
   try {
-    res.cookie("jwt", "", { maxAge: 0 });
-   return res.status(200).json({ message: "User logged out successfully" });
+    clearToken(res);
+    return res.status(200).json({ message: "User logged out successfully" });
   } catch (error) {
     if (error instanceof Error) {
       return res.status(500).json({ message: error.message });

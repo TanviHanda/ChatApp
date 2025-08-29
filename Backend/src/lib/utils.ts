@@ -1,16 +1,43 @@
 import jwt from "jsonwebtoken";
 import { Response } from "express";
-export const generateToken = (userId: Number|String, res: Response) => {
+interface TokenPayload {
+    userId: string | number;
+}
+
+export const generateToken = (userId: string | number, res: Response): string => {
     const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret || typeof jwtSecret !== "string") {
+    if (!jwtSecret) {
         throw new Error("JWT_SECRET environment variable is not defined");
     }
-    const token = jwt.sign({ userId }, jwtSecret, { expiresIn: "7d" });
-    res.cookie("jwt", token, {
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV !== "development",
+
+    const payload: TokenPayload = { userId };
+    const token = jwt.sign(payload, jwtSecret, { 
+        expiresIn: '7d',
+        algorithm: 'HS256' // Explicitly specify the algorithm
     });
+
+    // Set secure cookie with enhanced security options
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        httpOnly: true,
+        secure: isProduction, // Only send over HTTPS in production
+        sameSite: 'lax' as const, // 'none' for cross-site cookies in production
+        path: '/',
+        domain: isProduction ? 'https://chatapp-production-9c2d.up.railway.app' : undefined, // Set your production domain
+        // Consider adding these for additional security:
+        // partitioned: true, // For Chrome's new cookie partitioning
+    };
+
+    res.cookie('jwt', token, cookieOptions);
     return token;
-}
+};
+
+export const clearToken = (res: Response): void => {
+    res.clearCookie('jwt', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        path: '/',
+    });
+};
