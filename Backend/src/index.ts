@@ -7,7 +7,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import { connectDB } from "./lib/db.js";
 import { server, app } from "./lib/socket.js";
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 app.use(
   cors({
