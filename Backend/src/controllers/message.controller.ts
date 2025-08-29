@@ -1,7 +1,7 @@
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
-import { getReceiverSocketId, io } from "../lib/socket";
+import { getReceiverSocketId, io } from "../lib/socket.js";
 import { Request, Response } from "express";
 
 // Extend Express Request to include user (from auth middleware)

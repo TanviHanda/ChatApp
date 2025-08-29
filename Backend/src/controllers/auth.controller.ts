@@ -1,8 +1,8 @@
-import User from "@/models/user.model";
+import User from "@/models/user.model.js";
 import { Response, Request } from "express";
 import bcrypt from "bcryptjs";
-import { generateToken } from "@/lib/utils";
-import cloudinary from "@/lib/cloudinary";
+import { generateToken } from "@/lib/utils.js";
+import cloudinary from "@/lib/cloudinary.js";
 
 // Extend Express Request to include user (if middleware sets it)
 declare global {
