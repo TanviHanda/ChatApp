@@ -48,14 +48,14 @@ export const signup = async (req: SignupRequest, res: Response) => {
       // jwt token here
       generateToken(newUser._id.toString(), res);
       await newUser.save();
-      res.status(201).json({
+     return res.status(201).json({
         _id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
         profilePic: newUser.profilePic,
       });
     } else {
-      res.status(400).json({ message: "Invalid user data" });
+    return  res.status(400).json({ message: "Invalid user data" });
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -96,10 +96,10 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const logout = (req: Request, res: Response) => {
+export const logout = (_req: Request, res: Response) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });
-    res.status(200).json({ message: "User logged out successfully" });
+   return res.status(200).json({ message: "User logged out successfully" });
   } catch (error) {
     if (error instanceof Error) {
       return res.status(500).json({ message: error.message });
@@ -124,7 +124,7 @@ export const updateProfile = async (req: Request, res: Response) => {
       { new: true }
     );
 
-    res.status(200).json(updatedUser);
+    return res.status(200).json(updatedUser);
   } catch (error) {
     if (error instanceof Error) {
       return res.status(500).json({ message: error.message });
@@ -135,7 +135,7 @@ export const updateProfile = async (req: Request, res: Response) => {
 
 export const checkAuth = async (req: Request, res: Response) => {
   try {
-    res.status(200).json(req.user);
+   return res.status(200).json(req.user);
   } catch (error) {
     if (error instanceof Error) {
       return res.status(500).json({ message: error.message });

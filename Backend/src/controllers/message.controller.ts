@@ -44,10 +44,13 @@ export const getMessages = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const sendMessage = async (req: Request, res: Response): Promise<void> => {
+export const sendMessage = async (req: Request, res: Response)=> {
   try {
     const { text, image } = req.body as { text: string; image?: string };
     const { id: receiverId } = req.params;
+    if(!receiverId) {
+      return res.status(400).json({ error: "Receiver ID is required" });
+    }
     const senderId = req.user._id;
 
     let imageUrl: string | undefined;
@@ -71,9 +74,9 @@ export const sendMessage = async (req: Request, res: Response): Promise<void> =>
       io.to(receiverSocketId).emit("newMessage", newMessage);
     }
 
-    res.status(201).json(newMessage);
+   return res.status(201).json(newMessage);
   } catch (error) {
     console.log("Error in sendMessage controller: ", (error as Error).message);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };

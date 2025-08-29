@@ -33,7 +33,7 @@ export const protectRoute = async (req: Request, res: Response, next: NextFuncti
     }
 
     req.user = user;
-    next();
+  return  next();
   } catch (error) {
     if (error instanceof Error) {
       return res.status(500).json({ message: error.message });
