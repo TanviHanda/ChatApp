@@ -6,9 +6,11 @@ import toast from "react-hot-toast";
 const MessageInput = () => {
   const [text, setText] = useState<string>("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isLoadingImage, setIsLoadingImage] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const { sendMessage } = useChatStore() as {
-    sendMessage: (payload: { text: string; image: string | null }) => Promise<void>;
+  const { sendMessage, isSendingMessage } = useChatStore() as {
+    sendMessage: (payload: { text: string; image?: string }) => Promise<void>;
+    isSendingMessage: boolean;
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -20,15 +22,22 @@ const MessageInput = () => {
       return;
     }
 
+    setIsLoadingImage(true);
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result as string);
+      setIsLoadingImage(false);
+    };
+    reader.onerror = () => {
+      toast.error("Failed to load image");
+      setIsLoadingImage(false);
     };
     reader.readAsDataURL(file);
   };
 
   const removeImage = () => {
     setImagePreview(null);
+    setIsLoadingImage(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -36,36 +45,50 @@ const MessageInput = () => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
 
+    // Store values before clearing form (for optimistic update)
+    const messageText = text.trim();
+    const messageImage = imagePreview;
+
+    // Clear form immediately for better UX
+    setText("");
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     try {
       await sendMessage({
-        text: text.trim(),
-        image: imagePreview,
+        text: messageText,
+        image: messageImage || undefined,
       });
-
-      // Clear form
-      setText("");
-      setImagePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
+      // Restore form state if message failed to send
+      setText(messageText);
+      setImagePreview(messageImage);
       console.error("Failed to send message:", error);
     }
   };
 
   return (
     <div className="p-4 w-full">
-      {imagePreview && (
+      {(imagePreview || isLoadingImage) && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="w-20 h-20 object-cover rounded-lg border border-zinc-700"
-            />
+            {isLoadingImage ? (
+              <div className="w-20 h-20 rounded-lg border border-zinc-700 flex items-center justify-center bg-base-200">
+                <span className="loading loading-spinner loading-sm"></span>
+              </div>
+            ) : (
+              <img
+                src={imagePreview!}
+                alt="Preview"
+                className="w-20 h-20 object-cover rounded-lg border border-zinc-700"
+              />
+            )}
             <button
               onClick={removeImage}
               className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-base-300
               flex items-center justify-center"
               type="button"
+              disabled={isLoadingImage}
             >
               <X className="size-3" />
             </button>
@@ -93,18 +116,27 @@ const MessageInput = () => {
           <button
             type="button"
             className={`hidden sm:flex btn btn-circle
-                     ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
+                     ${imagePreview || isLoadingImage ? "text-emerald-500" : "text-zinc-400"}`}
             onClick={() => fileInputRef.current?.click()}
+            disabled={isLoadingImage}
           >
-            <Image size={20} />
+            {isLoadingImage ? (
+              <span className="loading loading-spinner loading-xs"></span>
+            ) : (
+              <Image size={20} />
+            )}
           </button>
         </div>
         <button
           type="submit"
           className="btn btn-sm btn-circle"
-          disabled={!text.trim() && !imagePreview}
+          disabled={(!text.trim() && !imagePreview) || isSendingMessage || isLoadingImage}
         >
-          <Send size={22} />
+          {isSendingMessage ? (
+            <span className="loading loading-spinner loading-xs"></span>
+          ) : (
+            <Send size={22} />
+          )}
         </button>
       </form>
     </div>
