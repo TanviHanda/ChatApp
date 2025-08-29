@@ -17,9 +17,7 @@ app.use(
     credentials: true,
   })
 );
-app.use("/", (_req, res) => {
-  res.send("Welcome to the Chat App API");
-});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 const PORT = env.PORT;
