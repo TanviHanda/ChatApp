@@ -27,6 +27,18 @@ io.on("connection", (socket: Socket) => {
   // io.emit() is used to send events to all connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
+  // Handle marking messages as read
+  socket.on("markAsRead", (data: { senderId: string; receiverId: string }) => {
+    const senderSocketId = getReceiverSocketId(data.senderId);
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messagesRead", {
+        readBy: data.receiverId,
+        senderId: data.senderId,
+        readAt: new Date(),
+      });
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.id);
     if (userId) {

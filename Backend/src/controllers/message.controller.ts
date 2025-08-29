@@ -80,3 +80,43 @@ export const sendMessage = async (req: Request, res: Response)=> {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const markMessagesAsRead = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id: senderId } = req.params;
+    const receiverId = req.user._id;
+
+    if (!senderId) {
+      res.status(400).json({ error: "Sender ID is required" });
+      return;
+    }
+
+    // Mark all unread messages from senderId to receiverId as read
+    const result = await Message.updateMany(
+      {
+        senderId: senderId,
+        receiverId: receiverId,
+        isRead: false,
+      },
+      {
+        isRead: true,
+        readAt: new Date(),
+      }
+    );
+
+    // Emit read status to sender
+    const senderSocketId = getReceiverSocketId(senderId);
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messagesRead", {
+        readBy: receiverId,
+        senderId: senderId,
+        readAt: new Date(),
+      });
+    }
+
+    res.status(200).json({ message: "Messages marked as read", modifiedCount: result.modifiedCount });
+  } catch (error) {
+    console.log("Error in markMessagesAsRead controller: ", (error as Error).message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

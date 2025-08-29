@@ -1,5 +1,6 @@
 import { useChatStore } from "../store/useChatStore";
 import { useEffect, useRef } from "react";
+import { Check, CheckCheck } from "lucide-react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -14,6 +15,8 @@ interface Message {
   receiverId: string;
   text?: string;
   image?: string;
+  isRead?: boolean;
+  readAt?: string;
   createdAt: string;
 }
 
@@ -33,6 +36,7 @@ const ChatContainer = () => {
     selectedUser,
     subscribeToMessages,
     unsubscribeFromMessages,
+    markMessagesAsRead,
   } = useChatStore() as {
     messages: Message[];
     getMessages: (userId: string) => void;
@@ -40,6 +44,7 @@ const ChatContainer = () => {
     selectedUser: User;
     subscribeToMessages: () => void;
     unsubscribeFromMessages: () => void;
+    markMessagesAsRead: (senderId: string) => Promise<void>;
   };
 
   const { authUser } = useAuthStore() as { authUser: User };
@@ -50,12 +55,15 @@ const ChatContainer = () => {
     if (selectedUser?._id) {
       getMessages(selectedUser._id);
       subscribeToMessages();
+      
+      // Mark messages as read when opening chat
+      markMessagesAsRead(selectedUser._id);
     }
 
     return () => {
       unsubscribeFromMessages();
     };
-  }, [selectedUser?._id, getMessages, subscribeToMessages, unsubscribeFromMessages]);
+  }, [selectedUser?._id, getMessages, subscribeToMessages, unsubscribeFromMessages, markMessagesAsRead]);
 
   useEffect(() => {
     if (messageEndRef.current && messages.length > 0) {
@@ -110,6 +118,17 @@ const ChatContainer = () => {
                 />
               )}
               {message.text && <p>{message.text}</p>}
+              
+              {/* Read indicators - only show for sent messages */}
+              {message.senderId === authUser._id && (
+                <div className="flex items-center justify-end mt-1">
+                  {message.isRead ? (
+                    <CheckCheck className="w-4 h-4 text-blue-500" />
+                  ) : (
+                    <Check className="w-4 h-4 text-gray-400" />
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}

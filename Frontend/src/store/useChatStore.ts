@@ -17,6 +17,8 @@ export interface Message {
   receiverId: string;
   text?: string;
   image?: string;
+  isRead?: boolean;
+  readAt?: string;
   createdAt: string;
 }
 
@@ -36,6 +38,8 @@ interface ChatState {
   getUsers: () => Promise<void>;
   getMessages: (userId: string) => Promise<void>;
   sendMessage: (messageData: MessageData) => Promise<void>;
+  markMessagesAsRead: (senderId: string) => Promise<void>;
+  getUnreadCount: (userId: string) => number;
   subscribeToMessages: () => void;
   unsubscribeFromMessages: () => void;
   setSelectedUser: (selectedUser: User | null) => void;
@@ -97,6 +101,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       receiverId: selectedUser._id,
       text: messageData.text,
       image: messageData.image,
+      isRead: false,
       createdAt: new Date().toISOString(),
     };
 
@@ -138,6 +143,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  markMessagesAsRead: async (senderId: string) => {
+    try {
+      await axiosInstance.put(`/messages/read/${senderId}`);
+      
+      // Update local messages to mark them as read
+      const { messages } = get();
+      const updatedMessages = messages.map(msg => 
+        msg.senderId === senderId && !msg.isRead 
+          ? { ...msg, isRead: true, readAt: new Date().toISOString() }
+          : msg
+      );
+      set({ messages: updatedMessages });
+    } catch (error: unknown) {
+      console.error("Failed to mark messages as read:", error);
+    }
+  },
+
+  getUnreadCount: (userId: string) => {
+    const { messages } = get();
+    const authUser = useAuthStore.getState().authUser;
+    if (!authUser) return 0;
+    
+    return messages.filter(msg => 
+      msg.senderId === userId && 
+      msg.receiverId === authUser._id && 
+      !msg.isRead
+    ).length;
+  },
+
   subscribeToMessages: () => {
     const { selectedUser } = get();
     if (!selectedUser) return;
@@ -151,12 +185,34 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (!isMessageSentFromSelectedUser) return;
 
       set({ messages: [...get().messages, newMessage] });
+      
+      // Auto-mark as read if the chat is currently open
+      if (selectedUser._id === newMessage.senderId) {
+        get().markMessagesAsRead(newMessage.senderId);
+      }
+    });
+
+    // Handle read receipts
+    socket.on("messagesRead", (data: { readBy: string; senderId: string; readAt: string }) => {
+      const { messages } = get();
+      const authUser = useAuthStore.getState().authUser;
+      
+      // Only update if the current user is the sender
+      if (authUser?._id === data.senderId) {
+        const updatedMessages = messages.map(msg => 
+          msg.senderId === authUser._id && msg.receiverId === data.readBy && !msg.isRead
+            ? { ...msg, isRead: true, readAt: data.readAt }
+            : msg
+        );
+        set({ messages: updatedMessages });
+      }
     });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
     socket?.off("newMessage");
+    socket?.off("messagesRead");
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),
