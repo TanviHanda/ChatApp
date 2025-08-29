@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { io, Socket } from "socket.io-client";
+import { AxiosError } from "axios";
 
 const BASE_URL =
   import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
@@ -70,7 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const res = await axiosInstance.get<AuthResponse>("/auth/check");
       set({ authUser: res.data });
       get().connectSocket();
-    } catch (error: any) {
+    } catch (error) {
       console.log("Error in checkAuth:", error);
       set({ authUser: null });
     } finally {
@@ -85,8 +86,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ authUser: res.data });
       toast.success("Account created successfully");
       get().connectSocket();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Signup failed");
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.message || "Signup failed");
+      }
     } finally {
       set({ isSigningUp: false });
     }
@@ -99,8 +102,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ authUser: res.data });
       toast.success("Logged in successfully");
       get().connectSocket();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Login failed");
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.message || "Login failed");
+      }
     } finally {
       set({ isLoggingIn: false });
     }
@@ -112,8 +117,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ authUser: null });
       toast.success("Logged out successfully");
       get().disconnectSocket();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Logout failed");
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.message || "Logout failed");
+      }
     }
   },
 
@@ -126,9 +133,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       );
       set({ authUser: res.data });
       toast.success("Profile updated successfully");
-    } catch (error: any) {
+    } catch (error) {
       console.log("Error in update profile:", error);
-      toast.error(error.response?.data?.message || "Update failed");
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data?.message || "Update failed");
+      }
     } finally {
       set({ isUpdatingProfile: false });
     }
