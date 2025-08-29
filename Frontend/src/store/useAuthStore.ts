@@ -5,7 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { AxiosError } from "axios";
 
 const BASE_URL =
-  import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
+  import.meta.env.MODE === "development" ? "http://localhost:3000" : import.meta.env.VITE_PUBLIC_API_URL;
 
 // -------------------- Types --------------------
 export interface AuthUser {

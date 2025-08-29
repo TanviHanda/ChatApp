@@ -11,10 +11,15 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "https://chat-app-ten-navy.vercel.app",
+    origin: [ 'https://chat-app-ten-navy.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'],
     credentials: true,
   })
 );
+app.use("/", (_req, res) => {
+  res.send("Welcome to the Chat App API");
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 const PORT = env.PORT;
