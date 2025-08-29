@@ -21,8 +21,8 @@ export const generateToken = (userId: string | number, res: Response): string =>
     const cookieOptions = {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         httpOnly: true,
-        secure: isProduction, // Only send over HTTPS in production
-        sameSite: 'lax' as const, // 'none' for cross-site cookies in production
+         secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const,
         path: '/',
         // partitioned: true, // For Chrome's new cookie partitioning
     };
